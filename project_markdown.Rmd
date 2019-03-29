@@ -1,0 +1,63 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+data2009 <-read.csv("2009.Data.Entry.Copy.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
+str(data2009)
+data2018 <-read.csv("2018.Data.Entry.Copy.csv", header = TRUE, sep = ",",stringsAsFactors = FALSE)
+str(data2018)
+
+```
+pulled in both data sets of data from csv files 
+```{r}
+d18<-data2018$SiteName[data2018$SiteName=="Naimen"]<-"Naiman"
+
+```
+renamed the variable Naimen to Naiman to match 2009 data and created a new dataframe with manipulated data
+```{r}
+d09<-rename(data2009,Transect = SiteCode)
+```
+renamed sitecode to transect in 2009 data to match 2018 and created a new dataframe with manipulated 
+```{r}
+install.packages("reshape")
+d09pc <- cast(d09,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
+
+```
+installed reshape package and casted data by species type and site code. Used cover as value to track basic presence/absence for 2009 data
+```{r}
+library(dplyr)
+d18<-rename(data2018,Species_Code = SpeciesCode)
+```
+reloaded dplyr pakage, and renamed SpeciesCode to match d09 
+```{r}
+d18pc <- cast(d18,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
+```
+performed same cast function for d18 to obtain presence absence 
+```{r}
+library(dplyr)
+d18<-rename(data2018,Species_Code = SpeciesCode)
+d18pc <- cast(d18,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
+```
+load dplyr package, created new data frame for manipulation of data called d18. Casted d18 into d18pc for presence/absence. 
+```{r}
+statsd09<-group_by(d09,SiteName)
+group_by(statsd09,Species_Code)
+meancover <- summarise(statsd09, mean=Cover)
+```
+created new data frame to calculate summary stats for original dataframe copy. Grouped by SiteName then by Species. compute mean cover. 
