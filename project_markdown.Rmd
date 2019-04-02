@@ -56,8 +56,34 @@ d18pc <- cast(d18,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
 ```
 load dplyr package, created new data frame for manipulation of data called d18. Casted d18 into d18pc for presence/absence. 
 ```{r}
-statsd09<-group_by(d09,SiteName)
-group_by(statsd09,Species_Code)
-meancover <- summarise(statsd09, mean=Cover)
+statsd09 <- d09 %>% group_by(SiteName) %>% group_by(Species_Code) %>% summarize(avg = mean(Cover))
+statsd18 <- d18 %>% group_by(SiteName) %>% group_by(Species_Code) %>% summarize(avg = mean(Cover))
+View(statsd09)
+View(statsd18)
 ```
-created new data frame to calculate summary stats for original dataframe copy. Grouped by SiteName then by Species. compute mean cover. 
+Created new data frame that contains the summary cover statistics of mean cover for each species within 2009 data 
+repeated the same steps for 2018 data. Used View function to confirm data has been subsetted in the way that I wanted
+```{r}
+summd09pa<- cast(statsd09,~Species_Code, value='avg', FUN=mean)
+summd18pa<- cast(statsd09,~Species_Code, value='avg', FUN=mean)
+```
+cast summary data to view the species cover by average 
+```{r}
+d09pc <- as.data.frame(d09pc)
+d18pc <- as.data.frame(d18pc)
+```
+changing both casts from 2009 and 2018 to data frames so that NA values can be converted into 0
+```{r}
+d09pc[is.na(d09pc)] <- 0
+d18pc[is.na(d18pc)] <- 0
+```
+changed NA to 0
+```{r}
+d09pc.matrix <- as.matrix.cast_df(d09pc)
+d18pc.matrix <- as.matrix.cast_df(d18pc)
+```
+casted to a matrix 
+```{r}
+
+```
+
