@@ -80,13 +80,7 @@ grazing18.avg <- d18 %>% filter(SiteName == "Grazing") %>% group_by(Species_Code
 heavy18.avg <- d18 %>% filter(SiteName == "Heavy") %>% group_by(Species_Code) %>% summarise(avg = mean(Cover))
 light18.avg <- d18 %>% filter(SiteName == "Light") %>% group_by(Species_Code) %>% summarise(avg = mean(Cover))
 ```
-ran the same function for 2018 data 
-```{r}
-med.site.d18 <- d18 %>% group_by(SiteName) %>% summarize(median.of.all.sites = median(Cover))
-med.site.d09 <- d09 %>% group_by(SiteName) %>% summarize(median.of.all.sites = median(Cover))
-```
-
-found median cover and std for species by sites for 2009 and 2018 data and assigned to their own data frame 
+ran the same function for 2018 data to calculate mean
 ```{r}
 naiman09.med <- d09 %>% filter(SiteName == "Naiman") %>% group_by(Species_Code) %>% summarise(med = median(Cover))
 grazing09.med <- d09 %>% filter(SiteName == "Grazing") %>% group_by(Species_Code) %>% summarise(med = median(Cover))
@@ -103,13 +97,14 @@ grazing18.sd <-d18 %>% filter(SiteName == "Grazing") %>% group_by(Species_Code) 
 heavy18.sd <-d18 %>% filter(SiteName == "Heavy") %>% group_by(Species_Code) %>% summarise(std = sd(Cover))
 light18.sd <-d18 %>% filter(SiteName == "Light") %>% group_by(Species_Code) %>% summarise(std = sd(Cover))
 ```
+Found median cover and std for species by sites for 2009 and 2018 data and assigned to their own data frame 
 Attempted a table join of Naiman 2009 summary statistics. 
 ```{r}
 naiman09.allstats <- left_join(naiman09.avg,naiman09.med, by = "Species_Code")
 View(naiman09.allstats)
 naiman09.summ.stat <- left_join(naiman09.allstats,naiman09.sd, by = "Species_Code")
 ```
-found I could not join more than 2 tables at atime, so I ran separate joins for STD, however found that by piping I could complete the process faster, with less code. So I completed the join of the data tables of summary statistics for remaining sites in both years 2009 and 2018 data as grouped species 
+Attempted a table join of Naiman 2009 summary statistics. 
 ```{r}
 naiman18.summ.stats <- left_join(naiman18.avg,naiman18.med, by='Species_Code') %>% left_join(.,naiman18.sd, by='Species_Code')
 grazing18.summ.stats <- left_join(grazing18.avg,grazing18.med, by='Species_Code') %>% left_join(.,grazing18.sd, by='Species_Code')
@@ -118,10 +113,19 @@ heavy18.summ.stats <- left_join(heavy18.avg,heavy18.med, by='Species_Code') %>% 
 light18.summ.stats <- left_join(light18.avg,light18.med, by='Species_Code') %>% left_join(.,light18.sd, by='Species_Code')
 grazing09.summ.stats <- left_join(grazing09.avg,grazing09.med, by='Species_Code') %>% left_join(.,grazing09.sd, by='Species_Code')
 ```
-re-did table join for Naiman 2009 so that naming convention and process matched the rest of the data 
-```
+Realized, I could not join more than 2 tables at atime, so I ran separate joins for STD, however found that by piping I could complete the process faster, with less code. So I completed the join of the data tables of summary statistics for remaining sites in both years 2009 and 2018 data as grouped species 
 ```{r}
 naiman09.summ.stats <- left_join(naiman09.avg,naiman09.med, by='Species_Code') %>% left_join(.,naiman09.sd, by='Species_Code')
 ```
-
-
+re-did table join for Naiman 2009 so that naming convention and process matched the rest of the data 
+```{r}
+med.site.d18 <- d18 %>% group_by(SiteName) %>% summarize(median.of.all.sites = median(Cover))
+med.site.d09 <- d09 %>% group_by(SiteName) %>% summarize(median.of.all.sites = median(Cover))
+avg.d18 <- d18 %>% group_by(SiteName) %>% summarize(avg = mean(Cover))
+avg.d09 <- d09 %>% group_by(SiteName) %>% summarize(avg = mean(Cover))
+std.d09 <- d09 %>% group_by(SiteName) %>% summarize(std = sd(Cover))
+std.d18 <- d18 %>% group_by(SiteName) %>% summarize(std = sd(Cover))
+allsites09.summ.stats <- left_join(avg.d09,med.site.d09, by='SiteName') %>% left_join(.,std.d09, by='SiteName')
+allsites18.summ.stats <- left_join(avg.d18,med.site.d18, by='SiteName') %>% left_join(.,std.d18, by='SiteName')
+```
+calculated remaining summary statistics across all sites and placed them into a table together 
