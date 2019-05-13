@@ -1,6 +1,9 @@
 ---
 title: "Soil Effects on Presence/Absence Analysis"
-output: html_notebook
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 ```{r}
 data2009 <-read.csv("2009.Data.Entry.Copy.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
@@ -16,18 +19,18 @@ d18<-data2018$SiteName[data2018$SiteName=="Naimen"]<-"Naiman"
 ```
 renamed the variable Naimen to Naiman to match 2009 data and created a new dataframe with manipulated data
 ```{r}
-d09<-rename(data2009,Transect = SiteCode)
+d09<-dplyr::rename(data2009,Transect = SiteCode)
 ```
 renamed sitecode to transect in 2009 data to match 2018 and created a new dataframe with manipulated 
 ```{r}
-install.packages("reshape")
+##install.packages("reshape2")
+library(reshape)
 d09pc <- cast(d09,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
 
 ```
 installed reshape package and casted data by species type and site code. Used cover as value to track basic presence/absence for 2009 data
 ```{r}
-library(dplyr)
-d18<-rename(data2018,Species_Code = SpeciesCode)
+d18<-dplyr::rename(data2018,Species_Code = SpeciesCode)
 ```
 reloaded dplyr pakage, and renamed SpeciesCode to match d09 
 ```{r}
@@ -36,7 +39,8 @@ d18pc <- cast(d18,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
 performed same cast function for d18 to obtain presence absence 
 ```{r}
 library(dplyr)
-d18<-rename(data2018,Species_Code = SpeciesCode)
+library(reshape)
+d18<-dplyr::rename(data2018,Species_Code = SpeciesCode)
 d18pc <- cast(d18,SiteName + PlotNumber ~ Species_Code, value='Cover', FUN=mean)
 ```
 load dplyr package, created new data frame for manipulation of data called d18. Casted d18 into d18pc for presence/absence. 
@@ -48,10 +52,8 @@ View(statsd18)
 ```
 Created new data frame that contains the summary cover statistics of mean cover for each species within 2009 data 
 repeated the same steps for 2018 data. Used View function to confirm data has been subsetted in the way that I wanted
-```{r}
-summd09pa<- cast(statsd09,~Species_Code, value='avg', FUN=mean)
-summd18pa<- cast(statsd09,~Species_Code, value='avg', FUN=mean)
-```
+##summd09pa<- dcast(statsd09,~Species_Code, value.var ='avg', FUN=mean)
+summd18pa<- dcast(statsd09,~Species_Code, value.var ='avg', FUN=mean)
 cast summary data to view the species cover by average 
 ```{r}
 d09pc <- as.data.frame(d09pc)
@@ -64,6 +66,7 @@ d18pc[is.na(d18pc)] <- 0
 ```
 changed NA to 0
 ```{r}
+library(reshape)
 d09pc.matrix <- as.matrix.cast_df(d09pc)
 d18pc.matrix <- as.matrix.cast_df(d18pc)
 ```
@@ -129,3 +132,130 @@ allsites09.summ.stats <- left_join(avg.d09,med.site.d09, by='SiteName') %>% left
 allsites18.summ.stats <- left_join(avg.d18,med.site.d18, by='SiteName') %>% left_join(.,std.d18, by='SiteName')
 ```
 calculated remaining summary statistics across all sites and placed them into a table together 
+```{r}
+library(knitr)
+kable(naiman09.summ.stats, caption = "Naiman 2009 Summary Statistics")
+kable(naiman18.summ.stats, caption = "Naiman 2018 Summary Statistics")
+kable(grazing09.summ.stats, caption = "Grazing 2009 Summary Statistics")
+kable(grazing18.summ.stats, caption = "Grazing 2018 Summary Statistics")
+kable(light18.summ.stats, caption = "Light 2018 Summary Statistics")
+kable(heavy18.summ.stats, caption = "Heavy 2018 Summary Statistics")
+kable(control18.summ.stats, caption = "Control 2018 Summary Statistics")
+kable(allsites09.summ.stats, caption = "All Sites 2009 Summary Statistics")
+kable(allsites18.summ.stats, caption = "All Sites 2018 Summary Statistics")
+```
+knitted tables that were calculated for summary statistics into the markdown document 
+```{r}
+library(dplyr)
+library(vegan)
+library(MASS)
+library(tidyr)
+library(MASS)
+library(reshape2)
+library(stringr)
+```
+loaded libraries to perform ordinations 
+Calculate distance matrix below 
+```{r}
+dis09.bray <- vegdist(d09pc.matrix, method = "bray")
+dis18.bray <- vegdist(d18pc.matrix, method = "bray")
+```
+need to add in id for treatments and extract plot replicates, and site ids. NMDS calculated below. 
+```{r}
+dis09.mds <- metaMDS(dis09.bray, trace = FALSE, autotransform = FALSE, shrink = FALSE)
+dis18.mds <- metaMDS(dis18.bray, trace = FALSE, autotransform = FALSE, shrink = FALSE)
+```
+data for 2009
+```{r}
+treat = c(rep("Grazing",65), rep("Naiman",60))
+sites <- d09pc[1:125,1]##use d09pc not matrix, extract site IDs 
+plots <- d09pc[1:125,2]
+```
+making a data frame by pulling out scores for each sites in 2009 
+```{r}
+scores <- data.frame(scores(dis09.mds,display="sites"))
+```
+bind scores 
+```{r}
+scores2 <- cbind(sites,scores)
+```
+plots 2009 data and drew a polygon around the spread 
+```{r}
+plot(dis09.mds,type= "t")
+ordihull(dis09.mds,groups=treat,draw = "polygon", col ="grey90", label=T)
+ordihull(dis09.mds,groups=sites,draw = "polygon", col ="grey90", label=T)
+```
+plots 2009 data and drew polygon around the spread 
+```{r}
+treat = c(rep("Control",5), rep("Grazing",5),rep("Heavy",4), rep("Light", 5), rep("Naiman",5) )
+sites <- d18pc[1:24,1]##use d09pc not matrix, extract site IDs 
+plots <- d18pc[1:24,2]
+scores <- data.frame(scores(dis18.mds,display="sites"))
+scores2 <- cbind(sites,scores)
+plot(dis18.mds,type= "t")
+##species scores not available
+ordihull(dis18.mds,groups=treat,draw = "polygon", col ="grey90", label=T)
+ordihull(dis18.mds,groups=sites,draw = "polygon", col ="grey90", label=T)
+```
+
+```{r}
+soils09 <- read.csv("Naiman_soils_copy.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE)
+str(soils09)
+```
+loaded 2009 soil data into the project as soils09
+```{r}
+TOCnaiman09.avg <-soils09 %>% filter(Trt == "Naiman") %>% group_by(Trt) %>% summarise(avgTOC = mean(TOC))
+TOCdxg09.avg <-soils09 %>% filter(Trt == "DXG") %>% group_by(Trt) %>% summarise(avgTOC = mean(TOC))
+TOCgrazing09.avg <-soils09 %>% filter(Trt == "Grazing") %>% group_by(Trt) %>% summarise(avgTOC = mean(TOC))
+TOCheavy09.avg <-soils09 %>% filter(Trt == "Heavy") %>% group_by(Trt) %>% summarise(avgTOC = mean(TOC))
+##calculated mean TOC 
+TNnaiman09.avg <-soils09 %>% filter(Trt == "Naiman") %>% group_by(Trt) %>% summarise(avgTN = mean(TN))
+TNgrazing09.avg <-soils09 %>% filter(Trt == "Grazing") %>% group_by(Trt) %>% summarise(avgTN = mean(TN))
+TNdxg09.avg <-soils09 %>% filter(Trt == "DXG") %>% group_by(Trt) %>% summarise(avgTN = mean(TN))
+TNheavy09.avg <-soils09 %>% filter(Trt == "Heavy") %>% group_by(Trt) %>% summarise(avgTN = mean(TN))
+##calculatd mean TN 
+```
+calculated mean Total Nitrogen and Mean Total Organic Carbon by using filtering 
+```{r}
+naiman09.soils.stats <- left_join(TNnaiman09.avg,TOCnaiman09.avg, by='Trt')
+grazing09.soils.stats <- left_join(TNgrazing09.avg,TOCgrazing09.avg, by='Trt')
+heavy09.soils.stats <- left_join(TNheavy09.avg,TOCheavy09.avg, by='Trt')
+dxg09.soils.stats <- left_join(TNdxg09.avg,TOCdxg09.avg, by='Trt')
+```
+joined tables for mean TN & TOC for each site 
+```{r}
+library(knitr)
+kable(naiman09.soils.stats, caption = "Naiman 2009 Soil Summary Statistics")
+kable(grazing09.soils.stats, caption = "Grazing 2009 Soil Summary Statistics")
+kable(heavy09.soils.stats, caption = "Heavy 2009 Soil Summary Statistics")
+kable(dxg09.soils.stats, caption = "DXG 2009 Soil Summary Statistics")
+```
+```{r}
+grazing09pc <- d09pc %>% filter(SiteName == "Grazing") %>% sample_n(10)
+naiman09pc <- d09pc %>% filter(SiteName == "Naiman") %>% sample_n(10)
+```
+filtered out naiman and grazing from 2009 data and picked ten random samples so that it matches soils data. 
+```{r}
+naiman09soil <- soils09 %>% filter(Trt == "Naiman")
+grazing09soil <- soils09 %>% filter(Trt == "Grazing")
+
+```
+filtered out naiman and grazing from soil data 
+```{r}
+ngrandom09 <- bind_rows(naiman09pc,grazing09pc)
+ngsoil09 <- bind_rows(naiman09soil,grazing09soil)
+```
+using bind, combined the naiman and grazing plant cover into one table and the naiman and grazing into one table 
+```{r}
+ngsoil09 <- ngsoil09 %>% unite(rowname, 1:2,sep = ".")%>% column_to_rownames(var = "rowname") %>% as.data.frame()
+ngrandom09 <- ngrandom09 %>% unite(rowname, 1:2,sep = ".")%>% column_to_rownames(var = "rowname") %>% as.data.frame()
+
+```
+rename the columns, into rows for treatment and site name so that the data was labelled in plots
+```{r}
+dng09.cca <- cca(ngrandom09 ~ TN + TOC, data=ngsoil09)
+```
+ran CCA 
+```{r}
+plot(dng09.cca)
+```
